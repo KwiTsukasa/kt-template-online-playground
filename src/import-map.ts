@@ -10,6 +10,22 @@ export function isVaporSupported(version: string): boolean{
   return major > 3 || (major === 3 && minor >= 6)
 }
 
+export const builtinLibraryImports: Record<string, string> = {
+  echarts: 'https://esm.sh/echarts@latest',
+  'echarts/': 'https://esm.sh/echarts@latest/',
+  'ant-design-vue': 'https://esm.sh/ant-design-vue@latest?external=vue',
+  'ant-design-vue/': 'https://esm.sh/ant-design-vue@latest/',
+  '@ant-design/icons-vue':
+    'https://esm.sh/@ant-design/icons-vue@latest?external=vue',
+  '@ant-design/icons-vue/': 'https://esm.sh/@ant-design/icons-vue@latest/',
+  'element-plus': 'https://esm.sh/element-plus@latest?external=vue',
+  'element-plus/': 'https://esm.sh/element-plus@latest/',
+  '@element-plus/icons-vue':
+    'https://esm.sh/@element-plus/icons-vue@latest?external=vue',
+  '@element-plus/icons-vue/':
+    'https://esm.sh/@element-plus/icons-vue@latest/',
+}
+
 export function useVueImportMap(
   defaults: {
     runtimeDev?: string | (() => string)
@@ -50,6 +66,7 @@ export function useVueImportMap(
       imports: {
         vue,
         'vue/server-renderer': serverRenderer,
+        ...builtinLibraryImports,
       },
     }
   })

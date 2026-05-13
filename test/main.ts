@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error */
 import { createApp, h, ref, watchEffect } from 'vue'
 import { type OutputModes, Repl, useStore, useVueImportMap } from '../src'
+import PlaygroundHeader from '../src/PlaygroundHeader.vue'
 // @ts-ignore
 import MonacoEditor from '../src/editor/MonacoEditor.vue'
 // @ts-ignore
@@ -31,7 +32,13 @@ const App = {
     ))
     console.info(store)
 
-    watchEffect(() => history.replaceState({}, '', store.serialize()))
+    watchEffect(() => {
+      history.replaceState(
+        {},
+        '',
+        `${location.pathname}${location.search}${store.serialize()}`,
+      )
+    })
 
     // setTimeout(() => {
     //   store.setFiles(
@@ -53,30 +60,33 @@ const App = {
     window.previewTheme = previewTheme
 
     return () =>
-      h(Repl, {
-        store,
-        theme: theme.value,
-        previewTheme: previewTheme.value,
-        editor: MonacoEditor,
-        showOpenSourceMap: true,
-        // layout: 'vertical',
-        ssr: true,
-        showSsrOutput: true,
-        sfcOptions: {
-          script: {
-            // inlineTemplate: false
+      h('div', { class: ['playground-shell', theme.value] }, [
+        h(PlaygroundHeader, { store }),
+        h(Repl, {
+          store,
+          theme: theme.value,
+          previewTheme: previewTheme.value,
+          editor: MonacoEditor,
+          showOpenSourceMap: true,
+          // layout: 'vertical',
+          ssr: true,
+          showSsrOutput: true,
+          sfcOptions: {
+            script: {
+              // inlineTemplate: false
+            },
           },
-        },
-        // showCompileOutput: false,
-        // showImportMap: false
-        editorOptions: {
-          autoSaveText: '💾',
-          monacoOptions: {
-            // wordWrap: 'on',
+          // showCompileOutput: false,
+          // showImportMap: false
+          editorOptions: {
+            autoSaveText: '💾',
+            monacoOptions: {
+              // wordWrap: 'on',
+            },
           },
-        },
-        // autoSave: false,
-      })
+          // autoSave: false,
+        }),
+      ])
   },
 }
 

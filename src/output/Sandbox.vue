@@ -62,6 +62,23 @@ let sandbox: HTMLIFrameElement
 let proxy: PreviewProxy
 let stopUpdateWatcher: WatchStopHandle | undefined
 
+const builtinLibraryHeadHTML = `
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@latest/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@latest/dist/index.css">
+`
+
+const antDesignVueModule = 'ant-design' + '-vue'
+const elementPlusModule = 'element' + '-plus'
+const builtinLibraryImportCode = [
+  `import __AntDesignVue from '${antDesignVueModule}'`,
+  `import __ElementPlus from '${elementPlusModule}'`,
+].join('\n')
+
+const builtinLibraryUseCode = `
+app.use(__AntDesignVue)
+app.use(__ElementPlus)
+`
+
 // create sandbox on mount
 onMounted(createSandbox)
 
@@ -118,13 +135,12 @@ function createSandbox() {
   )
 
   const importMap = store.value.getImportMap()
+  const headHTML =
+    builtinLibraryHeadHTML + (previewOptions.value?.headHTML || '')
   const sandboxSrc = srcdoc
     .replace(/<html>/, `<html class="${theme.value}">`)
     .replace(/<!--IMPORT_MAP-->/, JSON.stringify(importMap))
-    .replace(
-      /<!-- PREVIEW-OPTIONS-HEAD-HTML -->/,
-      previewOptions.value?.headHTML || '',
-    )
+    .replace(/<!-- PREVIEW-OPTIONS-HEAD-HTML -->/, headHTML)
     .replace(
       /<!--PREVIEW-OPTIONS-PLACEHOLDER-HTML-->/,
       previewOptions.value?.placeholderHTML || '',
@@ -237,6 +253,8 @@ async function updatePreview() {
         ...ssrModules,
         `import { renderToString as _renderToString } from 'vue/server-renderer'
          import { createSSRApp as _createApp ${vaporSupported ? ', createVaporSSRApp as _createVaporApp' : ''} } from 'vue'
+         ${builtinLibraryImportCode}
+         ${previewOptions.value?.customCode?.importCode || ''}
          const AppComponent = __modules__["${mainFile}"].default
          AppComponent.name = 'Repl'
          const vaporSupported = ${vaporSupported}
@@ -245,6 +263,8 @@ async function updatePreview() {
            app.config.unwrapInjectedRef = true
          }
          app.config.warnHandler = () => {}
+         ${builtinLibraryUseCode}
+         ${previewOptions.value?.customCode?.useCode || ''}
          const rawContext = {}
          window.__ssr_promise__ = _renderToString(app, rawContext).then(html => {
            document.body.innerHTML = '<div id="app">' + html + '</div>' + \`${
@@ -313,6 +333,7 @@ async function updatePreview() {
               } as _createVaporApp`
             : ''
         } } from "vue"
+        ${builtinLibraryImportCode}
         ${previewOptions.value?.customCode?.importCode || ''}
         const _mount = () => {
           const AppComponent = __modules__["${mainFile}"].default
@@ -323,6 +344,7 @@ async function updatePreview() {
             app.config.unwrapInjectedRef = true
           }
           app.config.errorHandler = e => console.error(e)
+          ${builtinLibraryUseCode}
           ${previewOptions.value?.customCode?.useCode || ''}
           app.mount('#app')
         }

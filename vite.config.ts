@@ -1,4 +1,4 @@
-import { type Plugin, mergeConfig } from 'vite'
+import { type Plugin, loadEnv, mergeConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 import base from './vite.preview.config'
 import fs from 'node:fs'
@@ -34,42 +34,58 @@ const patchCssFiles: Plugin = {
   },
 }
 
-export default mergeConfig(base, {
-  plugins: [
-    dts({
-      rollupTypes: true,
-    }),
-    genStub,
-    patchCssFiles,
-  ],
-  optimizeDeps: {
-    // avoid late discovered deps
-    include: [
-      'typescript',
-      'monaco-editor-core/esm/vs/editor/editor.worker',
-      'vue/server-renderer',
+export default ({ mode }: { mode: string }) => {
+  const env = loadEnv(mode, process.cwd())
+
+  return mergeConfig(base, {
+    plugins: [
+      dts({
+        rollupTypes: true,
+      }),
+      genStub,
+      patchCssFiles,
     ],
-  },
-  base: './',
-  build: {
-    target: 'esnext',
-    minify: false,
-    lib: {
-      entry: {
-        'vue-repl': './src/index.ts',
-        core: './src/core.ts',
-        'monaco-editor': './src/editor/MonacoEditor.vue',
-        'codemirror-editor': './src/editor/CodeMirrorEditor.vue',
-      },
-      formats: ['es'],
-      fileName: () => '[name].js',
+    server: {
+      proxy: env.VITE_APP_PROXY
+        ? {
+            '/api': {
+              target: env.VITE_APP_PROXY,
+              changeOrigin: true,
+              rewrite: (requestPath: string) =>
+                requestPath.replace(/^\/api/, ''),
+            },
+          }
+        : undefined,
     },
-    cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        chunkFileNames: 'chunks/[name]-[hash].js',
-      },
-      external: ['vue', 'vue/compiler-sfc'],
+    optimizeDeps: {
+      // avoid late discovered deps
+      include: [
+        'typescript',
+        'monaco-editor-core/esm/vs/editor/editor.worker',
+        'vue/server-renderer',
+      ],
     },
-  },
-})
+    base: './',
+    build: {
+      target: 'esnext',
+      minify: false,
+      lib: {
+        entry: {
+          'vue-repl': './src/index.ts',
+          core: './src/core.ts',
+          'monaco-editor': './src/editor/MonacoEditor.vue',
+          'codemirror-editor': './src/editor/CodeMirrorEditor.vue',
+        },
+        formats: ['es'],
+        fileName: () => '[name].js',
+      },
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          chunkFileNames: 'chunks/[name]-[hash].js',
+        },
+        external: ['vue', 'vue/compiler-sfc'],
+      },
+    },
+  })
+}

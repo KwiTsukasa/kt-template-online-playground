@@ -25,6 +25,13 @@ import newSFCCode from './template/new-sfc.vue?raw'
 
 export const importMapFile = 'import-map.json'
 export const tsconfigFile = 'tsconfig.json'
+export const builtinDependencyVersions: Record<string, string> = {
+  echarts: 'latest',
+  'ant-design-vue': 'latest',
+  '@ant-design/icons-vue': 'latest',
+  'element-plus': 'latest',
+  '@element-plus/icons-vue': 'latest',
+}
 
 export function useStore(
   {
@@ -46,7 +53,7 @@ export function useStore(
 
     locale = ref(),
     typescriptVersion = ref('latest'),
-    dependencyVersion = ref(Object.create(null)),
+    dependencyVersion = ref({ ...builtinDependencyVersions }),
     reloadLanguageTools = ref(),
     resourceLinks = undefined,
   }: Partial<StoreState> = {},
