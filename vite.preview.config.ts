@@ -4,6 +4,9 @@ import replace from '@rollup/plugin-replace'
 
 export default defineConfig({
   plugins: [vue()],
+  server: {
+    port: 48090,
+  },
   resolve: {
     alias: {
       '@vue/compiler-dom': '@vue/compiler-dom/dist/compiler-dom.cjs.js',

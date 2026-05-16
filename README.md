@@ -66,7 +66,7 @@ pnpm dev
 常用命令：
 
 ```bash
-pnpm dev          # 本地 Playground 页面
+pnpm dev          # 本地 Playground 页面，默认端口 48090
 pnpm typecheck    # 类型检查
 pnpm build        # 构建库产物
 pnpm build-preview
@@ -84,7 +84,7 @@ Playground 同时使用 query 和 hash：
 前台跳转示例：
 
 ```text
-http://localhost:5173/?id=xxx&name=基础折线图&type=1&componentType=1#...
+http://localhost:48090/?id=xxx&name=基础折线图&type=1&componentType=1#...
 ```
 
 ## 保存流程
