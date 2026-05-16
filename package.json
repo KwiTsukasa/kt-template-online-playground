@@ -52,7 +52,9 @@
     "build-preview": "vite build -c vite.preview.config.ts",
     "format": "prettier --write .",
     "lint": "eslint .",
+    "prepare": "husky",
     "typecheck": "vue-tsc --noEmit",
+    "verify:commit": "pnpm run lint && pnpm run typecheck",
     "release": "bumpp --all",
     "version": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "prepublishOnly": "npm run build"
@@ -104,6 +106,7 @@
     "eslint-plugin-vue": "^10.4.0",
     "fflate": "^0.8.2",
     "hash-sum": "^2.0.0",
+    "husky": "^9.1.7",
     "lint-staged": "^16.1.4",
     "monaco-editor-core": "^0.52.2",
     "prettier": "^3.6.2",

@@ -45,14 +45,16 @@ test/main.ts           # 本地 Playground 页面入口
 ```env
 VITE_APP_API_BASE=/api
 VITE_APP_PROXY=http://localhost:48085/
+VITE_APP_ADMIN_LOGIN=http://localhost:5999/auth/login
 ```
 
 关键变量：
 
-| 变量 | 说明 |
-| --- | --- |
-| `VITE_APP_API_BASE` | 前端请求前缀，默认 `/api` |
-| `VITE_APP_PROXY` | 后端服务地址，Vite dev server 会把 `/api` 代理到这里 |
+| 变量                   | 说明                                                            |
+| ---------------------- | --------------------------------------------------------------- |
+| `VITE_APP_API_BASE`    | 前端请求前缀，默认 `/api`                                       |
+| `VITE_APP_PROXY`       | 后端服务地址，Vite dev server 会把 `/api` 代理到这里            |
+| `VITE_APP_ADMIN_LOGIN` | 后台登录页地址，保存组件接口 `401` 时会带 `redirect` 跳转到这里 |
 
 ## 启动
 
@@ -103,20 +105,23 @@ http://localhost:48090/?id=xxx&name=基础折线图&type=1&componentType=1#...
 
 接口集中在 `src/api`：
 
-- `request.ts`：axios 实例，统一处理 `code !== 200` 的错误。
+- `request.ts`：axios 实例，统一处理 `code !== 200` 的错误，并在组件接口 `401` 时跳后台登录。
+- `auth.ts`：复用后台登录态，持久化 `accessToken`、用户信息和权限码，支持通过刷新 token cookie 自动续期。
 - `component.ts`：新增和编辑组件。
 - `dict.ts`：组件类型字典。
 - `minio.ts`：截图文件上传。
 
 当前主要接口：
 
-| 方法 | 地址 | 用途 |
-| --- | --- | --- |
-| `GET` | `/dict/getDictByKey` | 查询一级类型 |
-| `GET` | `/dict/getComponentDictByType` | 查询二级类型 |
-| `POST` | `/minio/upload` | 上传预览截图 |
-| `POST` | `/component/save` | 新增组件 |
-| `POST` | `/component/update` | 编辑组件 |
+| 方法   | 地址                           | 用途         |
+| ------ | ------------------------------ | ------------ |
+| `GET`  | `/dict/getDictByKey`           | 查询一级类型 |
+| `GET`  | `/dict/getComponentDictByType` | 查询二级类型 |
+| `POST` | `/minio/upload`                | 上传预览截图 |
+| `POST` | `/component/save`              | 新增组件     |
+| `POST` | `/component/update`            | 编辑组件     |
+
+保存组件需要后台登录态。请求层会先读取本地持久化的 accessToken；没有 token 时会通过 `/auth/refresh` 使用 cookie 刷新并持久化登录数据；接口返回 `401` 时会跳到 `VITE_APP_ADMIN_LOGIN`，登录成功后回到原页面继续保存流程。
 
 ## 开发约定
 

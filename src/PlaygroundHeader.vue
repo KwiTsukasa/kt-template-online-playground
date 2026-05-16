@@ -2,11 +2,11 @@
 import html2canvas from 'html2canvas'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
+  type ComponentPayload,
   saveComponent,
   updateComponent,
-  type ComponentPayload,
 } from './api/component'
-import { getComponentDictByType, getDictByKey, type DictItem } from './api/dict'
+import { type DictItem, getComponentDictByType, getDictByKey } from './api/dict'
 import { getResourceProxyEndpoint, uploadFile } from './api/minio'
 import type { ReplStore } from './store'
 
