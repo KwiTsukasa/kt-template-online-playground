@@ -56,18 +56,22 @@ export async function reloadLanguageTools(store: Store) {
     ...store.dependencyVersion,
   }
 
-  if (store.vueVersion) {
+  const vueDependencyVersion = store.vueVersion || store.compiler?.version
+
+  if (vueDependencyVersion) {
+    // Monaco's virtual node_modules needs a concrete Vue version; falling back
+    // to "latest" adds an extra CDN metadata request in production.
     dependencies = {
       ...dependencies,
-      vue: store.vueVersion,
-      '@vue/compiler-core': store.vueVersion,
-      '@vue/compiler-dom': store.vueVersion,
-      '@vue/compiler-sfc': store.vueVersion,
-      '@vue/compiler-ssr': store.vueVersion,
-      '@vue/reactivity': store.vueVersion,
-      '@vue/runtime-core': store.vueVersion,
-      '@vue/runtime-dom': store.vueVersion,
-      '@vue/shared': store.vueVersion,
+      vue: vueDependencyVersion,
+      '@vue/compiler-core': vueDependencyVersion,
+      '@vue/compiler-dom': vueDependencyVersion,
+      '@vue/compiler-sfc': vueDependencyVersion,
+      '@vue/compiler-ssr': vueDependencyVersion,
+      '@vue/reactivity': vueDependencyVersion,
+      '@vue/runtime-core': vueDependencyVersion,
+      '@vue/runtime-dom': vueDependencyVersion,
+      '@vue/shared': vueDependencyVersion,
     }
   }
 

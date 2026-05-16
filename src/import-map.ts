@@ -10,18 +10,22 @@ export function isVaporSupported(version: string): boolean{
   return major > 3 || (major === 3 && minor >= 6)
 }
 
+const esmBundle = (pkgName: string, externalVue = false) =>
+  `https://esm.sh/${pkgName}?bundle${externalVue ? '&external=vue' : ''}`
+
+// The preview iframe imports these packages on every run. Prefer bundled CDN
+// entries to avoid hundreds of tiny ESM/icon requests exhausting the browser.
 export const builtinLibraryImports: Record<string, string> = {
-  echarts: 'https://esm.sh/echarts@latest',
+  echarts: esmBundle('echarts@latest'),
   'echarts/': 'https://esm.sh/echarts@latest/',
-  'ant-design-vue': 'https://esm.sh/ant-design-vue@latest?external=vue',
-  'ant-design-vue/': 'https://esm.sh/ant-design-vue@latest/',
-  '@ant-design/icons-vue':
-    'https://esm.sh/@ant-design/icons-vue@latest?external=vue',
-  '@ant-design/icons-vue/': 'https://esm.sh/@ant-design/icons-vue@latest/',
-  'element-plus': 'https://esm.sh/element-plus@latest?external=vue',
+  'ant-design-vue':
+    'https://cdn.jsdelivr.net/npm/ant-design-vue@4.2.6/dist/antd.esm.min.js',
+  'ant-design-vue/': 'https://esm.sh/ant-design-vue@4.2.6/',
+  '@ant-design/icons-vue': esmBundle('@ant-design/icons-vue@7.0.1', true),
+  '@ant-design/icons-vue/': 'https://esm.sh/@ant-design/icons-vue@7.0.1/',
+  'element-plus': esmBundle('element-plus@latest', true),
   'element-plus/': 'https://esm.sh/element-plus@latest/',
-  '@element-plus/icons-vue':
-    'https://esm.sh/@element-plus/icons-vue@latest?external=vue',
+  '@element-plus/icons-vue': esmBundle('@element-plus/icons-vue@latest', true),
   '@element-plus/icons-vue/':
     'https://esm.sh/@element-plus/icons-vue@latest/',
 }

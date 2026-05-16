@@ -8,6 +8,23 @@ import type { URI } from 'vscode-uri'
 const textCache = new Map<string, Promise<string | undefined>>()
 const jsonCache = new Map<string, Promise<any>>()
 
+function trimUrlPath(path: string) {
+  return path.replace(/^\/+|\/+$/g, '')
+}
+
+function getUnpkgPackageUrl(
+  pkgName: string,
+  pkgVersion: string | undefined,
+  pkgPath = '',
+) {
+  const versionedPackage = `${pkgName}@${pkgVersion || 'latest'}`
+  const normalizedPath = trimUrlPath(pkgPath)
+
+  return normalizedPath
+    ? `https://unpkg.com/${versionedPackage}/${normalizedPath}`
+    : `https://unpkg.com/${versionedPackage}`
+}
+
 export type CreateNpmFileSystemOptions = {
   getPackageLatestVersionUrl?: (pkgName: string) => string
   getPackageDirectoryUrl?: (
@@ -24,11 +41,13 @@ export type CreateNpmFileSystemOptions = {
 
 const defaultUnpkgOptions: Required<CreateNpmFileSystemOptions> = {
   getPackageLatestVersionUrl: (pkgName) =>
-    `https://unpkg.com/${pkgName}@latest/package.json`,
+    getUnpkgPackageUrl(pkgName, 'latest', 'package.json'),
   getPackageDirectoryUrl: (pkgName, pkgVersion, pkgPath) =>
-    `https://unpkg.com/${pkgName}@${pkgVersion}/${pkgPath}/?meta`,
+    // Root package lookups must be `pkg@version/?meta`; `pkg@version//?meta`
+    // can be handled as a different URL by the CDN and lose CORS headers.
+    `${getUnpkgPackageUrl(pkgName, pkgVersion, pkgPath)}/?meta`,
   getPackageFileTextUrl: (pkgName, pkgVersion, pkgPath) =>
-    `https://unpkg.com/${pkgName}@${pkgVersion || 'latest'}/${pkgPath}`,
+    getUnpkgPackageUrl(pkgName, pkgVersion, pkgPath),
 }
 
 export function createNpmFileSystem(
