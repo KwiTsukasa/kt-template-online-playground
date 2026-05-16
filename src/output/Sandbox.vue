@@ -64,7 +64,7 @@ let stopUpdateWatcher: WatchStopHandle | undefined
 
 const builtinLibraryHeadHTML = `
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@4.2.6/dist/reset.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@latest/dist/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.14.0/dist/index.css">
 `
 
 const antDesignVueModule = 'ant-design' + '-vue'

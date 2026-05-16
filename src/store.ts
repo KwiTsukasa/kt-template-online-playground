@@ -29,8 +29,9 @@ export const builtinDependencyVersions: Record<string, string> = {
   echarts: 'latest',
   'ant-design-vue': 'latest',
   '@ant-design/icons-vue': 'latest',
-  'element-plus': 'latest',
-  '@element-plus/icons-vue': 'latest',
+  'element-plus': '2.14.0',
+  '@element-plus/icons-vue': '2.3.2',
+  'lodash-es': '4.17.21',
 }
 
 export function useStore(

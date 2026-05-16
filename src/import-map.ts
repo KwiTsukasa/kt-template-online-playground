@@ -13,21 +13,36 @@ export function isVaporSupported(version: string): boolean{
 const esmBundle = (pkgName: string, externalVue = false) =>
   `https://esm.sh/${pkgName}?bundle${externalVue ? '&external=vue' : ''}`
 
+const ANT_DESIGN_VUE_VERSION = '4.2.6'
+const ANT_DESIGN_ICONS_VERSION = '7.0.1'
+const ELEMENT_PLUS_VERSION = '2.14.0'
+const ELEMENT_PLUS_ICONS_VERSION = '2.3.2'
+const LODASH_VERSION = '4.17.21'
+
 // The preview iframe imports these packages on every run. Prefer bundled CDN
 // entries to avoid hundreds of tiny ESM/icon requests exhausting the browser.
 export const builtinLibraryImports: Record<string, string> = {
   echarts: esmBundle('echarts@latest'),
   'echarts/': 'https://esm.sh/echarts@latest/',
   'ant-design-vue':
-    'https://cdn.jsdelivr.net/npm/ant-design-vue@4.2.6/dist/antd.esm.min.js',
-  'ant-design-vue/': 'https://esm.sh/ant-design-vue@4.2.6/',
-  '@ant-design/icons-vue': esmBundle('@ant-design/icons-vue@7.0.1', true),
-  '@ant-design/icons-vue/': 'https://esm.sh/@ant-design/icons-vue@7.0.1/',
-  'element-plus': esmBundle('element-plus@latest', true),
-  'element-plus/': 'https://esm.sh/element-plus@latest/',
-  '@element-plus/icons-vue': esmBundle('@element-plus/icons-vue@latest', true),
+    `https://cdn.jsdelivr.net/npm/ant-design-vue@${ANT_DESIGN_VUE_VERSION}/dist/antd.esm.min.js`,
+  'ant-design-vue/': `https://esm.sh/ant-design-vue@${ANT_DESIGN_VUE_VERSION}/`,
+  '@ant-design/icons-vue': esmBundle(
+    `@ant-design/icons-vue@${ANT_DESIGN_ICONS_VERSION}`,
+    true,
+  ),
+  '@ant-design/icons-vue/': `https://esm.sh/@ant-design/icons-vue@${ANT_DESIGN_ICONS_VERSION}/`,
+  'element-plus': `https://cdn.jsdelivr.net/npm/element-plus@${ELEMENT_PLUS_VERSION}/dist/index.full.min.mjs`,
+  'element-plus/': `https://cdn.jsdelivr.net/npm/element-plus@${ELEMENT_PLUS_VERSION}/`,
+  '@element-plus/icons-vue': esmBundle(
+    `@element-plus/icons-vue@${ELEMENT_PLUS_ICONS_VERSION}`,
+    true,
+  ),
   '@element-plus/icons-vue/':
-    'https://esm.sh/@element-plus/icons-vue@latest/',
+    `https://esm.sh/@element-plus/icons-vue@${ELEMENT_PLUS_ICONS_VERSION}/`,
+  'lodash-es': esmBundle(`lodash-es@${LODASH_VERSION}`),
+  'lodash-es/': `https://cdn.jsdelivr.net/npm/lodash-es@${LODASH_VERSION}/`,
+  lodash: esmBundle(`lodash@${LODASH_VERSION}`),
 }
 
 export function useVueImportMap(
