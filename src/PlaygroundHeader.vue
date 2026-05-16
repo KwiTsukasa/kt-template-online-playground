@@ -32,6 +32,7 @@ const componentTypeList = ref<DictItem[]>([])
 const loading = ref(false)
 const message = ref('')
 const messageType = ref<'info' | 'success' | 'error'>('info')
+const screenshotPadding = 6
 
 const isEdit = computed(() => !!form.id)
 const canSave = computed(
@@ -78,6 +79,169 @@ function isCanvasSecurityError(err: unknown) {
   return err instanceof DOMException && err.name === 'SecurityError'
 }
 
+type ScreenshotBounds = {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+type ScreenshotArea = {
+  x: number
+  y: number
+  width: number
+  height: number
+  windowWidth: number
+  windowHeight: number
+}
+
+function mergeBounds(
+  bounds: ScreenshotBounds | undefined,
+  rect: Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom' | 'width' | 'height'>,
+) {
+  if (rect.width <= 0 || rect.height <= 0) {
+    return bounds
+  }
+
+  if (!bounds) {
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    }
+  }
+
+  return {
+    left: Math.min(bounds.left, rect.left),
+    top: Math.min(bounds.top, rect.top),
+    right: Math.max(bounds.right, rect.right),
+    bottom: Math.max(bounds.bottom, rect.bottom),
+  }
+}
+
+function isTransparentColor(value: string) {
+  return (
+    !value ||
+    value === 'transparent' ||
+    value === 'rgba(0, 0, 0, 0)' ||
+    value === 'rgb(0 0 0 / 0)'
+  )
+}
+
+function hasPaintedBox(style: CSSStyleDeclaration) {
+  const borderWidth =
+    Number.parseFloat(style.borderTopWidth) +
+    Number.parseFloat(style.borderRightWidth) +
+    Number.parseFloat(style.borderBottomWidth) +
+    Number.parseFloat(style.borderLeftWidth)
+
+  return (
+    style.backgroundImage !== 'none' ||
+    !isTransparentColor(style.backgroundColor) ||
+    borderWidth > 0 ||
+    style.boxShadow !== 'none' ||
+    style.outlineStyle !== 'none'
+  )
+}
+
+function isVisibleElement(element: Element, win: Window) {
+  const style = win.getComputedStyle(element)
+
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    Number(style.opacity) !== 0
+  )
+}
+
+function isRenderableElement(element: Element, win: Window) {
+  const tagName = element.tagName.toLowerCase()
+
+  return (
+    [
+      'button',
+      'canvas',
+      'img',
+      'input',
+      'select',
+      'svg',
+      'table',
+      'textarea',
+      'video',
+    ].includes(tagName) || hasPaintedBox(win.getComputedStyle(element))
+  )
+}
+
+function getContentBounds(root: HTMLElement, doc: Document) {
+  const win = doc.defaultView || window
+  let bounds: ScreenshotBounds | undefined
+
+  root.querySelectorAll('*').forEach((element) => {
+    if (!isVisibleElement(element, win) || !isRenderableElement(element, win)) {
+      return
+    }
+
+    bounds = mergeBounds(bounds, element.getBoundingClientRect())
+  })
+
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+
+  while (node) {
+    const text = node.textContent?.trim()
+
+    if (text) {
+      const range = doc.createRange()
+      range.selectNodeContents(node)
+      Array.from(range.getClientRects()).forEach((rect) => {
+        bounds = mergeBounds(bounds, rect)
+      })
+      range.detach()
+    }
+
+    node = walker.nextNode()
+  }
+
+  return bounds || mergeBounds(undefined, root.getBoundingClientRect())
+}
+
+function getPreviewContentArea(doc: Document, iframe: HTMLIFrameElement) {
+  const root = (doc.querySelector('#app') as HTMLElement | null) || doc.body
+  const bounds = getContentBounds(root, doc)
+
+  if (!bounds) {
+    throw new Error('预览内容为空，无法生成截图')
+  }
+
+  const win = doc.defaultView
+  const scrollX = win?.scrollX || 0
+  const scrollY = win?.scrollY || 0
+  const x = Math.max(0, Math.floor(bounds.left + scrollX - screenshotPadding))
+  const y = Math.max(0, Math.floor(bounds.top + scrollY - screenshotPadding))
+  const right = Math.ceil(bounds.right + scrollX + screenshotPadding)
+  const bottom = Math.ceil(bounds.bottom + scrollY + screenshotPadding)
+  const width = Math.max(1, right - x)
+  const height = Math.max(1, bottom - y)
+
+  return {
+    x,
+    y,
+    width,
+    height,
+    windowWidth: Math.max(
+      iframe.clientWidth,
+      doc.documentElement.scrollWidth,
+      right,
+    ),
+    windowHeight: Math.max(
+      iframe.clientHeight,
+      doc.documentElement.scrollHeight,
+      bottom,
+    ),
+  } satisfies ScreenshotArea
+}
+
 async function capturePreviewImage() {
   await nextFrame()
 
@@ -88,33 +252,28 @@ async function capturePreviewImage() {
     throw new Error('未找到预览区域，无法生成截图')
   }
 
-  const width = Math.max(iframe.clientWidth, 1)
-  const height = Math.max(iframe.clientHeight, 1)
+  const area = getPreviewContentArea(doc, iframe)
   const canvas = await html2canvas(doc.body, {
     allowTaint: false,
     backgroundColor: '#ffffff',
-    height,
+    height: area.height,
     imageTimeout: 15000,
     logging: false,
     proxy: getResourceProxyEndpoint(),
     scale: Math.min(window.devicePixelRatio || 1, 2),
     useCORS: false,
-    width,
-    windowHeight: height,
-    windowWidth: width,
-    x: 0,
-    y: 0,
+    width: area.width,
+    windowHeight: area.windowHeight,
+    windowWidth: area.windowWidth,
+    x: area.x,
+    y: area.y,
     scrollX: 0,
     scrollY: 0,
     onclone: (clonedDoc) => {
       const clonedBody = clonedDoc.body
 
-      // 交给 html2canvas 处理资源加载，只在克隆文档里固定截图视口，避免内容因 body 尺寸漂移。
+      // 交给 html2canvas 处理资源加载，只清理脚本并固定背景，截图范围由真实内容边界裁剪。
       clonedBody.querySelectorAll('script').forEach((item) => item.remove())
-      clonedBody.style.width = `${width}px`
-      clonedBody.style.height = `${height}px`
-      clonedBody.style.margin = '0'
-      clonedBody.style.overflow = 'hidden'
       clonedBody.style.background = '#ffffff'
     },
   })
