@@ -1,16 +1,13 @@
 <script setup lang="ts">
+import html2canvas from 'html2canvas'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
   saveComponent,
   updateComponent,
   type ComponentPayload,
 } from './api/component'
-import {
-  getComponentDictByType,
-  getDictByKey,
-  type DictItem,
-} from './api/dict'
-import { uploadFile } from './api/minio'
+import { getComponentDictByType, getDictByKey, type DictItem } from './api/dict'
+import { getResourceProxyEndpoint, uploadFile } from './api/minio'
 import type { ReplStore } from './store'
 
 type ComponentForm = {
@@ -64,28 +61,21 @@ function getPreviewIframe() {
   return document.querySelector<HTMLIFrameElement>('.iframe-container iframe')
 }
 
-function collectStyleText(doc: Document) {
-  return Array.from(doc.styleSheets)
-    .map((sheet) => {
-      try {
-        return Array.from(sheet.cssRules)
-          .map((rule) => rule.cssText)
-          .join('\n')
-      } catch {
-        return ''
-      }
-    })
-    .filter(Boolean)
-    .join('\n')
+function canvasToBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    try {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('截图生成失败'))),
+        'image/png',
+      )
+    } catch (err) {
+      reject(err)
+    }
+  })
 }
 
-function loadImage(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error('截图生成失败'))
-    image.src = src
-  })
+function isCanvasSecurityError(err: unknown) {
+  return err instanceof DOMException && err.name === 'SecurityError'
 }
 
 async function capturePreviewImage() {
@@ -100,51 +90,43 @@ async function capturePreviewImage() {
 
   const width = Math.max(iframe.clientWidth, 1)
   const height = Math.max(iframe.clientHeight, 1)
-  const cloned = doc.body.cloneNode(true) as HTMLElement
-  const styleText = collectStyleText(doc)
+  const canvas = await html2canvas(doc.body, {
+    allowTaint: false,
+    backgroundColor: '#ffffff',
+    height,
+    imageTimeout: 15000,
+    logging: false,
+    proxy: getResourceProxyEndpoint(),
+    scale: Math.min(window.devicePixelRatio || 1, 2),
+    useCORS: false,
+    width,
+    windowHeight: height,
+    windowWidth: width,
+    x: 0,
+    y: 0,
+    scrollX: 0,
+    scrollY: 0,
+    onclone: (clonedDoc) => {
+      const clonedBody = clonedDoc.body
 
-  cloned.querySelectorAll('script').forEach((item) => item.remove())
-  cloned.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml')
-  cloned.style.width = `${width}px`
-  cloned.style.height = `${height}px`
-  cloned.style.margin = '0'
-  cloned.style.overflow = 'hidden'
-
-  const serializer = new XMLSerializer()
-  const xhtml = Array.from(cloned.childNodes)
-    .map((node) => serializer.serializeToString(node))
-    .join('')
-  const safeStyleText = styleText.replace(/\]\]>/g, ']]]]><![CDATA[>')
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-      <foreignObject width="100%" height="100%">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;background:#fff;">
-          <style><![CDATA[${safeStyleText}]]></style>
-          ${xhtml}
-        </div>
-      </foreignObject>
-    </svg>
-  `
-  const svgUrl = URL.createObjectURL(
-    new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }),
-  )
+      // 交给 html2canvas 处理资源加载，只在克隆文档里固定截图视口，避免内容因 body 尺寸漂移。
+      clonedBody.querySelectorAll('script').forEach((item) => item.remove())
+      clonedBody.style.width = `${width}px`
+      clonedBody.style.height = `${height}px`
+      clonedBody.style.margin = '0'
+      clonedBody.style.overflow = 'hidden'
+      clonedBody.style.background = '#ffffff'
+    },
+  })
 
   try {
-    const image = await loadImage(svgUrl)
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    canvas.getContext('2d')?.drawImage(image, 0, 0, width, height)
+    return await canvasToBlob(canvas)
+  } catch (err) {
+    if (isCanvasSecurityError(err)) {
+      throw new Error('截图失败：预览中仍有跨域资源污染画布')
+    }
 
-    return await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) =>
-          blob ? resolve(blob) : reject(new Error('截图生成失败')),
-        'image/png',
-      )
-    })
-  } finally {
-    URL.revokeObjectURL(svgUrl)
+    throw err
   }
 }
 

@@ -1,4 +1,4 @@
-import { post } from './request'
+import { getApiUrl, post } from './request'
 
 export type MinioUploadResult = {
   url: string
@@ -6,4 +6,8 @@ export type MinioUploadResult = {
 
 export const uploadFile = (data: FormData) => {
   return post<MinioUploadResult>('/minio/upload', data)
+}
+
+export const getResourceProxyEndpoint = () => {
+  return getApiUrl('/minio/resource-proxy')
 }

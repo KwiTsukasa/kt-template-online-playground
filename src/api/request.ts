@@ -11,6 +11,14 @@ const request = axios.create({
   timeout: 1000 * 30,
 })
 
+export function getApiUrl(url: string) {
+  const baseURL = import.meta.env.VITE_APP_API_BASE || '/api'
+  const normalizedBase = baseURL.replace(/\/+$/, '')
+  const normalizedUrl = url.startsWith('/') ? url : `/${url}`
+
+  return `${normalizedBase}${normalizedUrl}`
+}
+
 request.interceptors.response.use(
   (response) => {
     const data = response.data as ApiResponse<any>
