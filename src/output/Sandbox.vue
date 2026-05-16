@@ -70,8 +70,10 @@ const builtinLibraryHeadHTML = `
 const antDesignVueModule = 'ant-design' + '-vue'
 const elementPlusModule = 'element' + '-plus'
 const builtinLibraryImportCode = [
-  `import __AntDesignVue from '${antDesignVueModule}'`,
-  `import __ElementPlus from '${elementPlusModule}'`,
+  `import * as __AntDesignVueModule from '${antDesignVueModule}'`,
+  `import * as __ElementPlusModule from '${elementPlusModule}'`,
+  `const __AntDesignVue = __AntDesignVueModule.default || __AntDesignVueModule`,
+  `const __ElementPlus = __ElementPlusModule.default || __ElementPlusModule`,
 ].join('\n')
 
 const builtinLibraryUseCode = `
