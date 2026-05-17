@@ -25,7 +25,7 @@ function getApiBase() {
 function getAdminLogin() {
   return (
     import.meta.env.VITE_APP_ADMIN_LOGIN ||
-    `${window.location.protocol}//${window.location.hostname}:5999/auth/login`
+    `${window.location.protocol}//${window.location.hostname}:5999/#/auth/login`
   )
 }
 
@@ -59,13 +59,24 @@ export function persistAuthData({
   }
 }
 
-export function redirectToAdminLogin() {
+function buildAdminLoginUrl(redirect: string) {
   const loginUrl = new URL(getAdminLogin())
-  loginUrl.searchParams.set(
-    'redirect',
-    encodeURIComponent(window.location.href),
-  )
-  window.location.href = loginUrl.toString()
+
+  if (loginUrl.hash) {
+    const [hashPath, hashSearch = ''] = loginUrl.hash.slice(1).split('?')
+    const hashParams = new URLSearchParams(hashSearch)
+    hashParams.set('redirect', redirect)
+    // Admin 生产环境使用 hash 路由，redirect 必须放在 hash 内部才能被 Vue Router 读取。
+    loginUrl.hash = `${hashPath}?${hashParams.toString()}`
+    return loginUrl.toString()
+  }
+
+  loginUrl.searchParams.set('redirect', redirect)
+  return loginUrl.toString()
+}
+
+export function redirectToAdminLogin() {
+  window.location.href = buildAdminLoginUrl(window.location.href)
 }
 
 export async function refreshPersistedAuth() {
