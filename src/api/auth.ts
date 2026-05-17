@@ -17,6 +17,7 @@ const ACCESS_CODES_KEY = 'kt-admin-access-codes'
 const USER_INFO_KEY = 'kt-admin-user-info'
 
 let refreshPromise: Promise<string | null> | null = null
+let redirectingToAdminLogin = false
 
 function getApiBase() {
   return import.meta.env.VITE_APP_API_BASE || '/api'
@@ -76,6 +77,9 @@ function buildAdminLoginUrl(redirect: string) {
 }
 
 export function redirectToAdminLogin() {
+  if (redirectingToAdminLogin) return
+
+  redirectingToAdminLogin = true
   window.location.href = buildAdminLoginUrl(window.location.href)
 }
 
