@@ -1,9 +1,11 @@
 import axios, { type AxiosRequestConfig } from 'axios'
 import {
+  clearAdminLoginRedirectMark,
   clearPersistedAuth,
   getStoredAccessToken,
   redirectToAdminLogin,
   refreshPersistedAuth,
+  shouldSkipRepeatedAdminLoginRedirect,
 } from './auth'
 
 export type ApiResponse<T = unknown> = {
@@ -85,6 +87,7 @@ async function retryRequestWithFreshToken(config?: AuthRetryConfig) {
 
 function redirectAfterAuthExpired() {
   clearPersistedAuth()
+  if (shouldSkipRepeatedAdminLoginRedirect()) return
   redirectToAdminLogin()
 }
 
@@ -106,6 +109,7 @@ request.interceptors.response.use(
       return Promise.reject(new Error(data.msg || '请求失败'))
     }
 
+    clearAdminLoginRedirectMark()
     return data.data as any
   },
   async (error) => {
