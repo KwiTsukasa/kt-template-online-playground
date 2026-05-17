@@ -2,6 +2,7 @@ import axios, { type AxiosRequestConfig } from 'axios'
 import {
   clearAdminLoginRedirectMark,
   clearPersistedAuth,
+  consumeAdminAuthRedirect,
   getStoredAccessToken,
   redirectToAdminLogin,
   refreshPersistedAuth,
@@ -38,7 +39,7 @@ export function getApiUrl(url: string) {
 }
 
 request.interceptors.request.use(async (config) => {
-  const accessToken = getStoredAccessToken()
+  const accessToken = consumeAdminAuthRedirect() || getStoredAccessToken()
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
