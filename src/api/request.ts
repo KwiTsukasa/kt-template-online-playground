@@ -36,11 +36,7 @@ export function getApiUrl(url: string) {
 }
 
 request.interceptors.request.use(async (config) => {
-  let accessToken = getStoredAccessToken()
-
-  if (!accessToken) {
-    accessToken = await refreshPersistedAuth()
-  }
+  const accessToken = getStoredAccessToken()
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
