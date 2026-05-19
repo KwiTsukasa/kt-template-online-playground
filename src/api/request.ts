@@ -11,9 +11,10 @@ import {
 
 export type ApiResponse<T = unknown> = {
   code: number
+  data: T
+  err?: unknown
   message?: string
   msg: string
-  data: T
 }
 
 type AuthRetryConfig = AxiosRequestConfig & {
@@ -127,6 +128,9 @@ request.interceptors.response.use(
       return Promise.reject(
         new Error(
           error.response?.data?.msg ||
+            (typeof error.response?.data?.err === 'string'
+              ? error.response.data.err
+              : '') ||
             error.response?.data?.message ||
             error.message ||
             '请求失败',
