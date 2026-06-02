@@ -3,10 +3,9 @@ node_modules
 dist
 TODOs.md
 
-# env
-.env
-.env.*
-!.env.example
+# local env override files
+.env.local
+.env.*.local
 
 # jetbrains files
 .idea
