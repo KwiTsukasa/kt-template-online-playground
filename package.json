@@ -54,6 +54,7 @@
     "lint": "eslint .",
     "prepare": "husky",
     "typecheck": "vue-tsc --noEmit",
+    "verify:staged": "node scripts/husky-fast-check.mjs",
     "verify:commit": "pnpm run lint && pnpm run typecheck",
     "release": "bumpp --all",
     "version": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",

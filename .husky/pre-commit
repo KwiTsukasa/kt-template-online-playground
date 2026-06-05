@@ -2,4 +2,4 @@ if grep -q '"lint-staged"' package.json; then
   pnpm exec lint-staged --concurrent false
 fi
 
-pnpm run verify:commit
+node scripts/husky-fast-check.mjs
